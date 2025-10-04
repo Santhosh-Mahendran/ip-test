@@ -1,7 +1,11 @@
 from flask import Flask, request, jsonify
 import ipaddress
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 app = Flask(__name__)
+
+# Render uses a proxy in front → trust 1 proxy
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
 
 ALLOWED_NET = ipaddress.ip_network("192.168.1.0/24")
 @app.before_request
@@ -16,6 +20,15 @@ def restrict_network():
         }), 403
 
 
-@app.route("/")
+@app.route("/home")
 def home():
     return {"message": "done"}
+
+
+@app.route("/")
+def index():
+    return {"client_ip": request.remote_addr}
+
+
+if __name__ == "__main__":
+    app.run()
